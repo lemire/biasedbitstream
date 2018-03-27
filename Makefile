@@ -46,10 +46,10 @@ simdrandombitstream.o: ./src/simdrandombitstream.c $(HEADERS)
 
 
 unit: ./tests/unit.c    $(HEADERS) $(OBJECTS)
-	$(CC) $(CFLAGS) -o unit ./tests/unit.c -Iinclude -Isrc  $(OBJECTS)
+	$(CC) $(CFLAGS) -o unit ./tests/unit.c -Iinclude -Isrc  $(OBJECTS) -lm
 
 benchmark: ./bench/bench.c ./bench/benchmark.h   $(HEADERS) $(OBJECTS)
-	$(CC) $(CFLAGS) -o benchmark ./bench/bench.c -Iinclude -Isrc -Ibench $(OBJECTS)
+	$(CC) $(CFLAGS) -o benchmark ./bench/bench.c -Iinclude -Isrc -Ibench $(OBJECTS) -lm 
 
 clean:
 	rm -f unit benchmark *.o $(OBJECTS) $(LIBNAME)
