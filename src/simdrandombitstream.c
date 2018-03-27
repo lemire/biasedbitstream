@@ -18,18 +18,12 @@ static inline __m256i lowestbit_epu16(__m256i vec) {
   return _mm256_and_si256(vec,_mm256_sub_epi16(_mm256_setzero_si256(),vec));
 }
 
-
-static inline __m256i flipbits_si256(__m256i x) {
-  return _mm256_xor_si256(x,_mm256_cmpeq_epi64(x,x));
-}
-
 // utility function
 static inline __m256i biasedvector_of_16bitmasks(__m256i mask_rev_p, avx_xorshift128plus_key_t * seed) {
   __m256i random = avx_xorshift128plus(seed);
   __m256i lowbits = lowestbit_epu16(random);
   __m256i andrandomword = _mm256_and_si256(mask_rev_p,lowbits);
-  __m256i turnanynonzerointozeros = _mm256_cmpeq_epi16(andrandomword,_mm256_setzero_si256());
-  return flipbits_si256(turnanynonzerointozeros);
+  return _mm256_cmpeq_epi16(andrandomword,_mm256_setzero_si256());
 }
 
 // utility function
@@ -39,7 +33,7 @@ static inline __m256i biasedvector(__m256i mask_rev_p, avx_xorshift128plus_key_t
 
   for(int k = 0; k < 16; k++) {
     __m256i v = biasedvector_of_16bitmasks(mask_rev_p,seed);
-    v = _mm256_and_si256(mask, v);
+    v = _mm256_andnot_si256(v, mask);
     answer = _mm256_or_si256(answer, v);
     mask = _mm256_slli_epi16(mask,1);
   }
