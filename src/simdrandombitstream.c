@@ -19,13 +19,6 @@ static inline __m256i lowestbit_epu16(__m256i vec) {
 }
 
 
-// return true if any 16-bit subword is zero
-static inline bool any_zero_epu16(__m256i vec) {
-  __m256i maybeall1s = _mm256_cmpeq_epi16(vec,_mm256_setzero_si256());
-  return _mm256_testnzc_si256(maybeall1s,_mm256_cmpeq_epi16(vec,vec));
-}
-
-
 static inline __m256i flipbits_si256(__m256i x) {
   return _mm256_xor_si256(x,_mm256_cmpeq_epi64(x,x));
 }
@@ -33,9 +26,6 @@ static inline __m256i flipbits_si256(__m256i x) {
 // utility function
 static inline __m256i biasedvector_of_16bitmasks(__m256i mask_rev_p, avx_xorshift128plus_key_t * seed) {
   __m256i random = avx_xorshift128plus(seed);
-  while(any_zero_epu16(random)) {// expensive but unlikely
-    random = avx_xorshift128plus(seed);
-  }
   __m256i lowbits = lowestbit_epu16(random);
   __m256i andrandomword = _mm256_and_si256(mask_rev_p,lowbits);
   __m256i turnanynonzerointozeros = _mm256_cmpeq_epi16(andrandomword,_mm256_setzero_si256());
