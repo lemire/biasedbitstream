@@ -1,0 +1,96 @@
+
+#include <x86intrin.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <assert.h>
+#include <math.h>
+
+#include "util.h"
+#include "simdxorshift128plus.h"
+#include "simdrandombitstream.h"
+
+#ifndef __AVX2__
+#warning "You lack AVX2! This is not going to end well for you."
+#endif
+
+static inline __m256i lowestbit_epu16(__m256i vec) {
+  // use the fact that x & (0-x) selects the least significant bit
+  return _mm256_and_si256(vec,_mm256_sub_epi16(_mm256_setzero_si256(),vec));
+}
+
+
+// return true if any 16-bit subword is zero
+static inline bool any_zero_epu16(__m256i vec) {
+  __m256i maybeall1s = _mm256_cmpeq_epi16(vec,_mm256_setzero_si256());
+  return _mm256_testnzc_si256(maybeall1s,_mm256_cmpeq_epi16(vec,vec));
+}
+
+
+static inline __m256i flipbits_si256(__m256i x) {
+  return _mm256_xor_si256(x,_mm256_cmpeq_epi64(x,x));
+}
+
+// utility function
+static inline __m256i biasedvector_of_16bitmasks(__m256i mask_rev_p, avx_xorshift128plus_key_t * seed) {
+  __m256i random = avx_xorshift128plus(seed);
+  while(any_zero_epu16(random)) {// expensive but unlikely
+    random = avx_xorshift128plus(seed);
+  }
+  __m256i lowbits = lowestbit_epu16(random);
+  __m256i andrandomword = _mm256_and_si256(mask_rev_p,lowbits);
+  __m256i turnanynonzerointozeros = _mm256_cmpeq_epi16(andrandomword,_mm256_setzero_si256());
+  return flipbits_si256(turnanynonzerointozeros);
+}
+
+// utility function
+static inline __m256i biasedvector(__m256i mask_rev_p, avx_xorshift128plus_key_t * seed) {
+  __m256i answer = _mm256_setzero_si256();
+  __m256i mask = _mm256_set1_epi16(1);
+
+  for(int k = 0; k < 16; k++) {
+    __m256i v = biasedvector_of_16bitmasks(mask_rev_p,seed);
+    v = _mm256_and_si256(mask, v);
+    answer = _mm256_or_si256(answer, v);
+    mask = _mm256_slli_epi16(mask,1);
+  }
+  return answer;
+}
+
+/**
+* Write to the (possible uninitialized) buffer a given number of random words
+* where the fraction of 1s is 'fraction' where 'fraction' is
+* between 0 and 1. We use 16 bits of accuracy, so the fraction
+* is theoretically accurate plus or minus 1/(1<<16) or 1.5e-05.
+*
+* You have to produce to 64-bit words as seeds, they should be non-zero.
+* Given the same 64-bit seeds, you will get the same random bits each
+* time.
+*
+* In practice, expect an accuracy of plus ou minus 0.0001 or 0.01 %.
+*
+*
+* Return true when succesful. False if something is wrong with your
+* parameters.
+*
+*/
+bool avx_fillwithrandombits(__m256i * words, size_t size, float fraction, uint64_t seed1, uint64_t seed2) {
+  if((fraction <= 0) || (fraction > 1)) {
+    // fraction should be between 0 and 1
+    return false;
+  }
+  if((seed1 & seed2) == 0) {
+    // seeds should be non-zero
+    return false;
+  }
+  avx_xorshift128plus_key_t seed;
+  avx_xorshift128plus_init(seed1,seed2,&seed);
+  int p = round(fraction * (1<<16));
+  if(fraction == 1.0) p = (1<<16) - 1;
+  int rev_p = bitreverse16(p);
+  __m256i mask_rev_p = _mm256_set1_epi16(rev_p);
+  for(size_t i = 0; i < size; i++) {
+    __m256i  b = biasedvector(mask_rev_p,&seed);
+    _mm256_storeu_si256(words + i, b);
+  }
+  return true;
+}
