@@ -1,6 +1,6 @@
 #include "basicgeometricdist.h"
 #include <math.h>
-
+#include <string.h>
 typedef struct pcg_state_setseq_64 { // Internals are *Private*.
   uint64_t state;                    // RNG state.  All values are possible.
   uint64_t inc;                      // Controls which RNG sequence (stream) is
@@ -22,6 +22,7 @@ static inline uint32_t nextgeom(float p, pcg32_random_t *rng) {
 }
 
 bool fillwithrandombits(uint64_t * words, size_t size, float fraction, uint64_t seed) {
+  memset(words, 0, size * sizeof(uint64_t));
   size_t maxval = size * 64;
   pcg32_random_t rng;
   rng.inc = 3;
