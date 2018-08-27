@@ -23,7 +23,7 @@ install: $(OBJECTS)
 
 
 
-HEADERS=./include/simdrandombitstream.h ./src/simdxorshift128plus.h ./src/util.h
+HEADERS=./include/simdrandombitstream.h ./include/basicgeometricdist.h ./src/simdxorshift128plus.h ./src/util.h
 uninstall:
 	for h in $(HEADERS) ; do rm  /usr/local/$$h; done
 	rm  /usr/local/lib/$(LIBNAME)
@@ -31,11 +31,13 @@ uninstall:
 	ldconfig
 
 
-OBJECTS= simdxorshift128plus.o simdrandombitstream.o
+OBJECTS= simdxorshift128plus.o simdrandombitstream.o basicgeometricdist.o
 
 $(LIBNAME): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $(LIBNAME) $(OBJECTS)  $(LDFLAGS)
 
+basicgeometricdist.o: ./src/basicgeometricdist.c $(HEADERS)
+	$(CC) $(CFLAGS) -c ./src/basicgeometricdist.c -Isrc  -Isrc -Iinclude
 
 simdxorshift128plus.o: ./src/simdxorshift128plus.c $(HEADERS)
 	$(CC) $(CFLAGS) -c ./src/simdxorshift128plus.c -Isrc
@@ -49,7 +51,7 @@ unit: ./tests/unit.c    $(HEADERS) $(OBJECTS)
 	$(CC) $(CFLAGS) -o unit ./tests/unit.c -Iinclude -Isrc  $(OBJECTS) -lm
 
 benchmark: ./bench/bench.c ./bench/benchmark.h   $(HEADERS) $(OBJECTS)
-	$(CC) $(CFLAGS) -o benchmark ./bench/bench.c -Iinclude -Isrc -Ibench $(OBJECTS) -lm 
+	$(CC) $(CFLAGS) -o benchmark ./bench/bench.c -Iinclude -Isrc -Ibench $(OBJECTS) -lm
 
 clean:
 	rm -f unit benchmark *.o $(OBJECTS) $(LIBNAME)

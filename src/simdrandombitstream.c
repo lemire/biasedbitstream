@@ -13,17 +13,11 @@
 #warning "You lack AVX2! This is not going to end well for you."
 #endif
 
-static inline __m256i lowestbit_epu16(__m256i vec) {
-  // use the fact that x & (0-x) selects the least significant bit
-  return _mm256_and_si256(vec,_mm256_sub_epi16(_mm256_setzero_si256(),vec));
-}
 
 // utility function
 static inline __m256i biasedvector_of_16bitmasks(__m256i mask_rev_p, avx_xorshift128plus_key_t * seed) {
   __m256i random = avx_xorshift128plus(seed);
-  __m256i lowbits = lowestbit_epu16(random);
-  __m256i andrandomword = _mm256_and_si256(mask_rev_p,lowbits);
-  return _mm256_cmpeq_epi16(andrandomword,_mm256_setzero_si256());
+  return _mm256_cmpeq_epi16( random, _mm256_max_epu16(mask_rev_p,random)) ;
 }
 
 // utility function
@@ -70,8 +64,7 @@ bool avx_fillwithrandombits(__m256i * words, size_t size, float fraction, uint64
   avx_xorshift128plus_init(seed1,seed2,&seed);
   int p = round(fraction * (1<<16));
   if(fraction == 1.0) p = (1<<16) - 1;
-  int rev_p = bitreverse16(p);
-  __m256i mask_rev_p = _mm256_set1_epi16(rev_p);
+  __m256i mask_rev_p = _mm256_set1_epi16(p);//rev_p);
   for(size_t i = 0; i < size; i++) {
     __m256i  b = biasedvector(mask_rev_p,&seed);
     _mm256_storeu_si256(words + i, b);

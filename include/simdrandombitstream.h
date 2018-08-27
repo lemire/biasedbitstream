@@ -10,7 +10,7 @@
 #ifdef __AVX2__
 
 /**
-* Write to the (possible uninitialized) buffer a given number of random words
+* Write to the (possibly uninitialized) buffer a given number of random words
 * where the fraction of 1s is 'fraction' where 'fraction' is
 * between 0 and 1. We use 16 bits of accuracy, so the fraction
 * is theoretically accurate plus or minus 1/(1<<16) or 1.5e-05.
