@@ -25,6 +25,5 @@ static const unsigned char BitReverseTable256[] = {
 
 static inline uint16_t bitreverse16(uint16_t v) {
   return ((uint32_t)BitReverseTable256[v & 0xff] << 8) |
-         ((uint32_t)BitReverseTable256[(v >> 8) & 0xff]) ;
+         ((uint32_t)BitReverseTable256[(v >> 8) & 0xff]);
 }
-
