@@ -21,16 +21,23 @@ static inline uint32_t nextgeom(float p, pcg32_random_t *rng) {
   return (uint32_t)(log(frv) / log(1.0 - p)); // obviously log(1.0-p) could be precomp.
 }
 
+static inline uint32_t nextgeom_precomp(double invlogp, pcg32_random_t *rng) {
+  uint32_t rv = pcg32_random_r(rng);
+  double frv = (double) rv / (UINT64_C(1)<<32); // return value in [0,1]
+  return (uint32_t)(log(frv)  * invlogp);
+}
+
 bool fillwithrandombits(uint64_t * words, size_t size, float fraction, uint64_t seed) {
   memset(words, 0, size * sizeof(uint64_t));
   size_t maxval = size * 64;
   pcg32_random_t rng;
   rng.inc = 3;
   rng.state = seed;
-  size_t t = nextgeom(fraction,&rng);
+  double precompinvlog = 1.0 / log(1.0 - fraction);
+  size_t t = nextgeom_precomp(precompinvlog,&rng);
   while(t < maxval) {
     words[t / 64] |= (UINT64_C(1) << (t%64));
-    t += nextgeom(fraction,&rng);
+    t += nextgeom_precomp(precompinvlog,&rng);
   }
   return true;
 
