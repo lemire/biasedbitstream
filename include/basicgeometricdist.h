@@ -17,5 +17,8 @@
  */
 bool fillwithrandombits(uint64_t *words, size_t size, float fraction,
                         uint64_t seed);
+bool fillwithrandombits_nomemset(uint64_t *words, size_t size, float fraction,
+                        uint64_t seed);
+
 
 #endif

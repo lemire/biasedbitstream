@@ -1091,19 +1091,15 @@ static inline __m256i biasedvectorcircuit16(bool *bits,
   return base;
 }
 
-bool avx_fillwithrandombits_circuit(__m256i *words, size_t size, float fraction,
+
+bool avx_fillwithrandombits_circuit_normalized(__m256i *words, size_t size, int p,
                                     uint64_t seed1, uint64_t seed2) {
-  if ((fraction <= 0) || (fraction > 1)) {
-    // fraction should be between 0 and 1
-    return false;
-  }
   if ((seed1 & seed2) == 0) {
     // seeds should be non-zero
     return false;
   }
   avx_xorshift128plus_key_t seed;
   avx_xorshift128plus_init(seed1, seed2, &seed);
-  int p = round(fraction * (1 << 16));
   bool bits[16];
   for (int b = 0; b < 16; b++) {
     bits[b] = p & (1 << b);
@@ -1216,13 +1212,46 @@ bool avx_fillwithrandombits_circuit(__m256i *words, size_t size, float fraction,
   return true;
 }
 
+bool avx_fillwithrandombits_circuit(__m256i *words, size_t size, float fraction,
+                                    uint64_t seed1, uint64_t seed2) {
+  if ((fraction <= 0) || (fraction > 1)) {
+    // fraction should be between 0 and 1
+    return false;
+  }
+  int p = round(fraction * (1 << 16));
+  return avx_fillwithrandombits_circuit_normalized(words,size,p,seed1,seed2);
+}
+
+
+
 bool avx_fillwithrandombits_hybrid(__m256i *words, size_t size, float fraction,
                                    uint64_t seed1, uint64_t seed2) {
-  if (fraction <= 0.007812) {
-    return fillwithrandombits((uint64_t *)words, size * 4, fraction, seed1);
-  } else {
+  int p = round(fraction * (1 << 16));
+  int offset = 0;
+  for (int b = 0; b < 16; b++) {
+    if(p & (1 << b)) break;
+    offset++;
+  }  
+  int usefulbits = 16 - offset;
+  // if there are few useful bits, we are in the easy case:
+  if(usefulbits <= 8) {
     return avx_fillwithrandombits_circuit(words, size, fraction, seed1, seed2);
   }
+  // otherwise we try an approximation:
+  /***
+  * this code is not especially smart.
+  */
+  int approx_p = p & 0xFFc0;
+  if(approx_p == 0) {
+    return fillwithrandombits((uint64_t *)words, size * 4, fraction, seed1);
+  }
+  float approx_proba = approx_p * 1.0 / (1 << 16);
+  float small_fraction = ( fraction - approx_proba ) / ( 1 - approx_proba );
+  if(small_fraction < 0.000001) 
+    return avx_fillwithrandombits_circuit(words, size, fraction, seed1, seed2);
+   //float expected = approx_proba + small_fraction - approx_proba * small_fraction;
+  return avx_fillwithrandombits_circuit_normalized(words, size, approx_p, seed1, seed2)
+     && fillwithrandombits_nomemset((uint64_t *)words, size * 4, small_fraction, seed1);
 }
 
 // utility function

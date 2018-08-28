@@ -30,9 +30,8 @@ static inline uint32_t nextgeom_precomp(double invlogp, pcg32_random_t *rng) {
   return (uint32_t)(log(frv) * invlogp);
 }
 
-bool fillwithrandombits(uint64_t *words, size_t size, float fraction,
+bool fillwithrandombits_nomemset(uint64_t *words, size_t size, float fraction,
                         uint64_t seed) {
-  memset(words, 0, size * sizeof(uint64_t));
   size_t maxval = size * 64;
   pcg32_random_t rng;
   rng.inc = 3;
@@ -44,4 +43,11 @@ bool fillwithrandombits(uint64_t *words, size_t size, float fraction,
     t += nextgeom_precomp(precompinvlog, &rng);
   }
   return true;
+}
+
+
+bool fillwithrandombits(uint64_t *words, size_t size, float fraction,
+                        uint64_t seed) {
+  memset(words, 0, size * sizeof(uint64_t));
+  return fillwithrandombits_nomemset(words,size,fraction,seed);
 }

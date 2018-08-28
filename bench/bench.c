@@ -18,14 +18,21 @@ int main() {
   for(int power = 1; power < 14; power ++) {
     float f = 1.0;
     for(int p = 0; p<power; p++) f *= 0.5;
-      printf("\n\n\n ratio %f, we display the number of cycles per 64-bit word generated \n\n", f);
-      BEST_TIME_NOCHECK(avx_fillwithrandombits_hybrid((__m256i *)words,size/4,f,rand(),rand()), , repeat, size,  verbose)  ;
-      BEST_TIME_NOCHECK(avx_fillwithrandombits((__m256i *)words,size/4,f,rand(),rand()), , repeat, size,  verbose)  ;
-      BEST_TIME_NOCHECK(avx_fillwithrandombits_circuit((__m256i *)words,size/4,f,rand(),rand()), , repeat, size,  verbose)  ;
-      BEST_TIME_NOCHECK(fillwithrandombits((uint64_t *)words,size,f,rand()), , repeat, size,  verbose)  ;
+    printf("\n\n\n ratio %f, we display the number of cycles per 64-bit word generated \n\n", f);
+    BEST_TIME_NOCHECK(avx_fillwithrandombits_hybrid((__m256i *)words,size/4,f,rand(),rand()), , repeat, size,  verbose)  ;
+    BEST_TIME_NOCHECK(avx_fillwithrandombits((__m256i *)words,size/4,f,rand(),rand()), , repeat, size,  verbose)  ;
+    BEST_TIME_NOCHECK(avx_fillwithrandombits_circuit((__m256i *)words,size/4,f,rand(),rand()), , repeat, size,  verbose)  ;
+    if(f < 0.25)  BEST_TIME_NOCHECK(fillwithrandombits((uint64_t *)words,size,f,rand()), , repeat, size,  verbose)  ;
 
   }
+  for(float f = 0.5; f > 0.0001; f *= 0.34556) {
+    printf("\n\n\n ratio %f, we display the number of cycles per 64-bit word generated \n\n", f);
+    BEST_TIME_NOCHECK(avx_fillwithrandombits_hybrid((__m256i *)words,size/4,f,rand(),rand()), , repeat, size,  verbose)  ;
+    BEST_TIME_NOCHECK(avx_fillwithrandombits((__m256i *)words,size/4,f,rand(),rand()), , repeat, size,  verbose)  ;
+    BEST_TIME_NOCHECK(avx_fillwithrandombits_circuit((__m256i *)words,size/4,f,rand(),rand()), , repeat, size,  verbose)  ;
+    if(f < 0.25)  BEST_TIME_NOCHECK(fillwithrandombits((uint64_t *)words,size,f,rand()), , repeat, size,  verbose)  ;
 
+  }
   printf("\n");
   return EXIT_SUCCESS;
 }
