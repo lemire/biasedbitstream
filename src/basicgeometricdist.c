@@ -15,14 +15,15 @@ static inline uint32_t pcg32_random_r(pcg32_random_t *rng) {
   return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
 }
 
-static inline uint32_t nextgeom(float p, pcg32_random_t *rng) {
+/*static inline uint32_t nextgeom(float p, pcg32_random_t *rng) {
   uint32_t rv = pcg32_random_r(rng);
   double frv = (double) rv / (UINT64_C(1)<<32); // return value in [0,1]
   return (uint32_t)(log(frv) / log(1.0 - p)); // obviously log(1.0-p) could be precomp.
-}
+}*/
 
 static inline uint32_t nextgeom_precomp(double invlogp, pcg32_random_t *rng) {
   uint32_t rv = pcg32_random_r(rng);
+  // this could be greatly accelerated, I suspect... the log could be replaced, and so forth.
   double frv = (double) rv / (UINT64_C(1)<<32); // return value in [0,1]
   return (uint32_t)(log(frv)  * invlogp);
 }
